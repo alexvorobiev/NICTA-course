@@ -240,8 +240,12 @@ flattenAgain =
 seqOptional ::
   List (Optional a)
   -> Optional (List a)
-seqOptional =
-  error "todo: Course.List#seqOptional"
+
+seqOptional = foldRight step (Full Nil)
+  where step Empty _ = Empty
+        step _ Empty = Empty
+        step (Full e) (Full acc) = Full (e :. acc)
+
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -263,8 +267,10 @@ find ::
   (a -> Bool)
   -> List a
   -> Optional a
-find =
-  error "todo: Course.List#find"
+find _ Nil = Empty
+find p (x :. xs) = if p x then Full x else find p xs
+
+            
 
 -- | Determine if the length of the given list is greater than 4.
 --
@@ -282,8 +288,11 @@ find =
 lengthGT4 ::
   List a
   -> Bool
-lengthGT4 =
-  error "todo: Course.List#lengthGT4"
+lengthGT4 = lgt 0 where
+  lgt 4 _ = True
+  lgt _ Nil = False
+  lgt n (_ :. xs) = lgt (n + 1) xs
+
 
 -- | Reverse a list.
 --
@@ -299,8 +308,10 @@ lengthGT4 =
 reverse ::
   List a
   -> List a
-reverse =
-  error "todo: Course.List#reverse"
+reverse = rev Nil
+  where rev acc Nil = acc
+        rev acc (x :. xs) = rev (x :. acc) xs
+
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
@@ -314,8 +325,8 @@ produce ::
   (a -> a)
   -> a
   -> List a
-produce =
-  error "todo: Course.List#produce"
+produce f a = a :. produce f (f a)
+  
 
 -- | Do anything other than reverse a list.
 -- Is it even possible?
@@ -329,8 +340,12 @@ produce =
 notReverse ::
   List a
   -> List a
-notReverse =
-  error "todo: Is it even possible?"
+notReverse Nil = Nil
+notReverse (x :. Nil) = x :. Nil
+notReverse (x1 :. xs) = last xs :. x1 :. Nil
+  where
+    last (x :. Nil) = x
+    last (_ :. xs) = last xs
 
 ---- End of list exercises
 
