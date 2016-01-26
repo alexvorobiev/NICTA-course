@@ -340,12 +340,7 @@ produce f a = a :. produce f (f a)
 notReverse ::
   List a
   -> List a
-notReverse Nil = Nil
-notReverse (x :. Nil) = x :. Nil
-notReverse (x1 :. xs) = last xs :. x1 :. Nil
-  where
-    last (x :. Nil) = x
-    last (_ :. xs) = last xs
+notReverse = reverse
 
 ---- End of list exercises
 
