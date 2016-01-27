@@ -61,8 +61,8 @@ infixl 4 <*>
   (a -> b)
   -> f a
   -> f b
-(<$>) =
-  error "todo: Course.Applicative#(<$>)"
+(<$>) x = ((pure x) <*>)
+
 
 -- | Insert into Id.
 --
