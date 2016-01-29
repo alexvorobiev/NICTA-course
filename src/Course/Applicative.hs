@@ -276,8 +276,8 @@ lift4 x y z v w = x <$> y <*> z <*> v <*> w
   f a
   -> f b
   -> f b
-(*>) =
-  error "todo: Course.Applicative#(*>)"
+(*>) x y = flip const <$> x <*> y
+  
 
 -- | Apply, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -302,8 +302,8 @@ lift4 x y z v w = x <$> y <*> z <*> v <*> w
   f b
   -> f a
   -> f b
-(<*) =
-  error "todo: Course.Applicative#(<*)"
+(<*) x y = const <$> x <*> y
+  
 
 -- | Sequences a list of structures to a structure of list.
 --
@@ -325,8 +325,8 @@ sequence ::
   Applicative f =>
   List (f a)
   -> f (List a)
-sequence =
-  error "todo: Course.Applicative#sequence"
+sequence = foldRight step (pure Nil) where
+  step x acc = (:.) <$> x <*> acc  
 
 -- | Replicate an effect a given number of times.
 --
@@ -349,8 +349,8 @@ replicateA ::
   Int
   -> f a
   -> f (List a)
-replicateA =
-  error "todo: Course.Applicative#replicateA"
+replicateA n x =
+  sequence $ replicate n x
 
 -- | Filter a list with a predicate that produces an effect.
 --
