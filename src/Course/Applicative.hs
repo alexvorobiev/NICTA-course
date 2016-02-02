@@ -377,8 +377,9 @@ filtering ::
   (a -> f Bool)
   -> List a
   -> f (List a)
-filtering =
-  error "todo: Course.Applicative#filtering"
+filtering p = foldRight step (pure Nil) where
+  step x acc = (\h t -> if h then x :. t else t) <$> p x <*> acc  
+
 
 -----------------------
 -- SUPPORT LIBRARIES --
