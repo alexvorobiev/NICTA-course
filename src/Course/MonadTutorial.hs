@@ -9,7 +9,7 @@ import Data.Foldable(foldr)
 import Data.Functor(Functor(fmap))
 import Data.Int(Int)
 import Data.String(IsString(fromString))
-import Prelude(Show)
+import Prelude(Show, (==))
 import System.IO(IO)
 
 {-
@@ -449,3 +449,23 @@ class BindAndPure f where
     a
     -> f a
     
+sequence ::
+    BindAndPure f =>
+    [f a]
+    -> f [a]
+sequence =
+  foldr (\a as ->
+    bind (\a' ->
+    bind (\as' ->
+    pure (a' : as')) as) a)
+  (pure [])
+  
+instance BindAndPure Id where
+  bind = bindId
+  pure = pureId
+  
+-- | sequence and sequenceId are the same
+--
+-- >>> sequence [Id 1, Id 2, Id 3] == sequenceId [Id 1, Id 2, Id 3]
+-- True
+--
