@@ -343,7 +343,7 @@ eof ::
   Parser ()
 eof =
   P (\i -> case parse character i of
-                (Result _ _) -> ErrorResult Failed
+                (Result i' _) -> ErrorResult $ ExpectedEof i'
                 (ErrorResult _) -> Result (listh "") ())
 
 -- | Write a parser that produces a character that satisfies all of the given predicates.
@@ -422,4 +422,4 @@ betweenSepbyComma ::
   -> Parser a
   -> Parser (List a)
 betweenSepbyComma c1 c2 p =
-  betweenCharTok c1 c2 $ sepby p (is ',')  
+  betweenCharTok c1 c2 $ sepby p (charTok ',')  

@@ -110,7 +110,12 @@ toSpecialCharacter c =
 jsonString ::
   Parser Chars
 jsonString =
-  error "todo: Course.JsonParser#jsonString"
+  tok $ between (is '"') (is '"') $ 
+  list $ (string "\\" >>>
+          (hexu ||| (character >>= \x ->
+            case toSpecialCharacter x of
+              (Full c) -> pure $ fromSpecialCharacter c
+              _ -> failed))) ||| noneof "\"\\"
 
 -- | Parse a JSON rational.
 --
@@ -139,7 +144,15 @@ jsonString =
 jsonNumber ::
   Parser Rational
 jsonNumber =
-  error "todo: Course.JsonParser#jsonNumber"
+  (sequenceParser $
+   (option "" $ stringTok "-") :.
+   digits1 :.
+   (option "" $ string ".") :.
+   (option "" $ digits1) :. Nil) >>=
+  valueParser . flatten >>= \x ->
+  case readFloats x of
+    Full (v, _) -> valueParser v
+    Empty -> failed
 
 -- | Parse a JSON true literal.
 --
@@ -153,7 +166,7 @@ jsonNumber =
 jsonTrue ::
   Parser Chars
 jsonTrue =
-  error "todo: Course.JsonParser#jsonTrue"
+  stringTok "true"
 
 -- | Parse a JSON false literal.
 --
@@ -167,7 +180,7 @@ jsonTrue =
 jsonFalse ::
   Parser Chars
 jsonFalse =
-  error "todo: Course.JsonParser#jsonFalse"
+  stringTok "false"
 
 -- | Parse a JSON null literal.
 --
@@ -181,7 +194,7 @@ jsonFalse =
 jsonNull ::
   Parser Chars
 jsonNull =
-  error "todo: Course.JsonParser#jsonNull"
+  stringTok "null" 
 
 -- | Parse a JSON array.
 --
@@ -204,7 +217,7 @@ jsonNull =
 jsonArray ::
   Parser (List JsonValue)
 jsonArray =
-  error "todo: Course.JsonParser#jsonArray"
+  betweenSepbyComma '[' ']' jsonValue
 
 -- | Parse a JSON object.
 --
@@ -224,7 +237,11 @@ jsonArray =
 jsonObject ::
   Parser Assoc
 jsonObject =
-  error "todo: Course.JsonParser#jsonObject"
+  betweenSepbyComma '{' '}' $
+    spaces >>>
+    jsonString >>= \s ->
+    charTok ':' >>> jsonValue >>= \v ->
+    pure (s, v)
 
 -- | Parse a JSON value.
 --
@@ -240,14 +257,24 @@ jsonObject =
 -- Result >< [("key1",JsonTrue),("key2",JsonArray [JsonRational False (7 % 1),JsonFalse]),("key3",JsonObject [("key4",JsonNull)])]
 jsonValue ::
   Parser JsonValue
-jsonValue =
-   error "todo: Course.JsonParser#jsonValue"
+jsonValue = spaces >>> (
+  jsonTrue >>> valueParser JsonTrue |||
+  jsonFalse >>> valueParser JsonFalse |||
+  jsonNull >>> valueParser JsonNull  |||
+  (jsonArray >>= valueParser . JsonArray) |||
+  (jsonString >>= valueParser . JsonString) |||
+  (jsonObject >>= valueParser . JsonObject) |||
+  (jsonNumber >>= valueParser . (JsonRational False)))
 
+  
 -- | Read a file into a JSON value.
 --
 -- /Tip:/ Use @System.IO#readFile@ and `jsonValue`.
 readJsonValue ::
   Filename
   -> IO (ParseResult JsonValue)
-readJsonValue =
-  error "todo: Course.JsonParser#readJsonValue"
+readJsonValue f =
+  do
+    j <- readFile f
+    pure $ parse jsonValue j
+
