@@ -187,7 +187,7 @@ data Digit =
   | Seven
   | Eight
   | Nine
-  deriving (Eq, Enum, Bounded)
+  deriving (Eq, Enum, Bounded, Show)
 
 showDigit ::
   Digit
@@ -323,5 +323,96 @@ fromChar _ =
 dollars ::
   Chars
   -> Chars
-dollars =
-  error "todo: Course.Cheque#dollars"
+dollars s =
+  let (ds, cs) = (break ((==) '.') s)
+      flt = foldRight (\x acc -> case fromChar x of
+                          Full d -> d :. acc
+                          _ -> acc) Nil
+      ds' = flt ds
+      cs' = if cs == Nil then
+              Nil
+            else (take 2) . flt $ drop 1 cs
+      
+      -- Easier to do special cases for nothing and one
+      doDollars Nil = "zero dollars"
+      doDollars (One :. Nil) = "one dollar"
+      
+      doDollars v
+        -- Special case for 0000... because we need to skip zeros othewise
+        | and $ zipWith (==) v (repeat Zero) = "zero dollars"
+        | otherwise = (++ "dollars") . (drop 1) . flatten . reverse $ zipWith
+          (\x y -> if x /= "zero" then
+                    " " ++ x ++ " " ++ y
+                  else "")
+          (showDigit3 <$> (by3 v))
+          illion
+        
+      doCents Nil = "zero cents"
+      doCents (Zero :. One :. Nil) = "one cent"
+      doCents (d :. Nil) = doCents (d :. Zero :. Nil)
+      
+      doCents v = (++ " cents") . (flatMap showDigit3) $ (by3 v) in
+  (doDollars ds') ++ " and " ++ (doCents cs')
+
+by3 ::
+  List Digit
+  -> List Digit3
+by3 =
+  unfoldr (\x -> let t = take 3 x in
+            if t == Nil then Empty
+            else Full (toDigit3 $ reverse t, drop 3 x) ) . reverse
+
+prefixTens ::
+  List Chars
+prefixTens =
+  listh ["thir", "four", "fif", "six", "seven", "eigh", "nine"]
+
+teens ::
+  List Chars
+teens =
+  listh ["ten", "eleven", "twelve"] ++
+  ((++ ("teen" :: Chars)) <$> prefixTens)
+
+tens  ::
+  List Chars
+tens =
+  listh ["twenty"] ++
+  ((++ ("ty" :: Chars)) <$> (\c -> if c == "four" then "for" else c) <$> prefixTens)
+
+showDigit3 ::
+  Digit3 -> Chars
+
+showDigit3 (D1 d) = showDigit d
+
+showDigit3 (D2 Zero Zero) = showDigit3 $ D1 Zero
+
+showDigit3 (D2 Zero d) = showDigit3 $ D1 d
+
+showDigit3 (D2 One d) = headOr "bah" (drop (fromEnum d) teens)
+
+showDigit3 (D2 d Zero) = headOr "bah" (drop (fromEnum d - 2) tens)
+
+showDigit3 (D2 d1 d2) = showDigit3 (D2 d1 Zero) ++ "-" ++ showDigit3 (D1 d2)
+
+showDigit3 (D3 Zero Zero Zero) = showDigit3 $ D1 Zero
+
+showDigit3 (D3 Zero d1 d2) = showDigit3 $ D2 d1 d2
+
+showDigit3 (D3 d Zero Zero) = showDigit d ++ " hundred"
+
+showDigit3 (D3 d1 d2 d3) = showDigit3 (D3 d1 Zero Zero) ++ " and " ++ showDigit3 (D2 d2 d3)
+   
+toDigit3 ::
+  List Digit
+  -> Digit3
+toDigit3
+  (d1 :. d2 :. d3 :. _) = D3 d1 d2 d3
+
+toDigit3
+  (d1 :. d2 :. _) = D2 d1 d2
+
+toDigit3
+  (d1 :. _) = D1 d1 
+
+toDigit3
+  _ = D1 Zero
