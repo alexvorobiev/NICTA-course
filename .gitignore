@@ -7,6 +7,10 @@
 /.cabal-sandbox
 /cabal.sandbox.config
 
+# Stack
+
+.stack-work/
+
 # Haskell Program Coverage
 /.hpc
 
